@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<head>
+		<style>
+
+	.axis {
+	  font: 10px sans-serif;
+	}
+
+	.axis path,
+	.axis line {
+	  fill: none;
+	  stroke: #000;
+	  shape-rendering: crispEdges;
+	}
+body {
+	  font: 14px sans-serif;
+	}
+	tr:hover td { background-color: gold; }
+	table a:link, a:visited { text-decoration: none; }
+
+	table a:hover, a:active { text-decoration: underline; }
+
+	table,th,td { border: 1px black; }
+.tooltip {
+  box-shadow: 0 0 5px #999999;
+  background: #CEDF00;
+  position: absolute;
+  width: 50px;
+  height: 25px;
+}
+a:link { text-decoration: none }
+	</style>
+</head>
+
+<body>
+<br>
+<br>
+<h1  style="font: ariel">Car Buying Guidebook&nbsp&nbsp<img src="car.png" width="60" height="60" align="bottom"></h1>
+<br>
+<br>
+<table>
+	<tr>
+		<td><img src="1.png" width="35" height="35"/></td>
+		<td><img src="2.png" width="35" height="35"/></td>
+		<td><img src="3.png" width="35" height="35"/></td>
+	</tr>
+	<tr>
+		<td><a href="index.html" style="color: #aaa">Explore vehicle makes and models</a>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</td>
+		<td><a href="scatterplot.html">Run analytics</a>&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp</td>
+		<td><a href="table.html">Make a decision!</a></td>
+	</tr>
+</table>
+<br>
+Order by <select id="order">
+  <option class="top-level-option" value="Make" selected="selected">by Make</option>
+  <option class="top-level-option" value="Fuel">by Fuel Type</option>
+  <option class="top-level-option" value="EngineCylinders">by Engine Cylinders</option>
+  <option class="top-level-option" value="AverageHighwayMPG">by Highway MPG...</option>
+	<option class="top-level-option" value="AverageCityMPG">by City MPG...</option>
+
+</select>
+<script src="http://d3js.org/d3.v4.min.js"></script>
+<script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
+<script>
+
+var margin = {top: 20, right: 20, bottom: 70, left: 40},
+    width = 500 - margin.left - margin.right,
+    height = 320 - margin.top - margin.bottom;
+
+const annotations = [{
+  note: {
+    label: "Now that you have a make of a vehicle in mind, get a holistic view of how your chosen make compares with other vehicles holistically for ALL parameters. You can sort data by multiple parameters in your decision making process.",
+    bgPadding: 20,
+    wrap: 300,
+    align: "left",
+    title: "Your choice"
+  },
+  connector: {
+      end: "dot",  
+      type: "line",      
+      lineType : "vertical",
+      endScale: 2
+    },
+  className: "show-bg",
+  y: 10,
+  x: 10,
+  dy: 60,
+  width: 500
+}]
+
+
+const makeAnnotations = d3.annotation()
+  .editMode(false)
+  .notePadding(10)
+  .annotations(annotations);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+svg.call(makeAnnotations);
+
+	function render(sortByIndex) {
+	    d3.csv("https://flunky.github.io/cars2017.csv", function(error, data) {
+	        var myArray = [];
+		    data.forEach(function(d, i){
+			    myArray.push([d.Make, d.Fuel, d.EngineCylinders,d.AverageHighwayMPG,d.AverageCityMPG]);
+		    });
+            svg.selectAll("tr").remove();
+            var table = d3.select("body").append("g").append("table");
+            var header = table.append("thead").append("tr");
+            header
+                    .selectAll("th")
+                    .data(["Make", "Fuel", "EngineCylinders", "AverageHighwayMPG", "AverageCityMPG"])
+                    .enter()
+                    .append("th")
+                    .text(function(d) { return d; });
+            var tablebody = table.append("tbody");
+            rows = tablebody
+                    .selectAll("tr")
+                    .data(myArray)
+                    .enter()
+                    .append("tr")
+                    .sort(function (a, b) {
+                        return a == null || b == null ? 0 :
+                            compare(sortByIndex, a[sortByIndex], b[sortByIndex]);
+                    });
+            cells = rows.selectAll("td")
+                    .data(function(d) {
+                        return d;
+                    })
+                    .enter()
+                    .append("td")
+                    .text(function(d) {
+                        return d;
+                    });
+		});
+	};
+
+	function compare(i, a, b) {
+	    if (i > 1) {
+		    a = parseInt(a);
+		    b = parseInt(b);
+		};
+		return a > b ? 1 : a == b ? 0 : -1;
+	};
+
+    render(0);
+
+	d3.select("#order")
+    .on("change", function () {
+        var sect = document.getElementById("order");
+	    var field = sect.options[sect.selectedIndex].value;
+		render(sect.selectedIndex);
+	});
+
+</script>
+</body>
